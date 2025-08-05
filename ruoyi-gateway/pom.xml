@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.ruoyi</groupId>
         <artifactId>ruoyi</artifactId>
-        <version>3.6.4</version>
+        <version>3.6.6</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -76,16 +76,11 @@
             <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
-        <!-- Swagger -->
+        <!-- Springdoc -->
         <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${swagger.fox.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${swagger.fox.version}</version>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-webflux-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
 
     </dependencies>

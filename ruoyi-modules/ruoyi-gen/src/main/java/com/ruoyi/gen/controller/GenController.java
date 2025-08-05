@@ -23,6 +23,7 @@ import com.ruoyi.common.core.web.page.TableDataInfo;
 import com.ruoyi.common.log.annotation.Log;
 import com.ruoyi.common.log.enums.BusinessType;
 import com.ruoyi.common.security.annotation.RequiresPermissions;
+import com.ruoyi.gen.config.GenConfig;
 import com.ruoyi.gen.domain.GenTable;
 import com.ruoyi.gen.domain.GenTableColumn;
 import com.ruoyi.gen.service.IGenTableColumnService;
@@ -56,7 +57,7 @@ public class GenController extends BaseController
     }
 
     /**
-     * 修改代码生成业务
+     * 获取代码生成信息
      */
     @RequiresPermissions("tool:gen:query")
     @GetMapping(value = "/{tableId}")
@@ -168,6 +169,10 @@ public class GenController extends BaseController
     @GetMapping("/genCode/{tableName}")
     public AjaxResult genCode(@PathVariable("tableName") String tableName)
     {
+        if (!GenConfig.isAllowOverwrite())
+        {
+            return AjaxResult.error("【系统预设】不允许生成文件覆盖到本地");
+        }
         genTableService.generatorCode(tableName);
         return success();
     }

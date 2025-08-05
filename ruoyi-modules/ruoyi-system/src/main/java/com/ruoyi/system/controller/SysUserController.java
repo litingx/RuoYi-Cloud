@@ -1,6 +1,7 @@
 package com.ruoyi.system.controller;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import com.ruoyi.common.core.domain.R;
+import com.ruoyi.common.core.text.Convert;
+import com.ruoyi.common.core.utils.DateUtils;
 import com.ruoyi.common.core.utils.StringUtils;
 import com.ruoyi.common.core.utils.poi.ExcelUtil;
 import com.ruoyi.common.core.web.controller.BaseController;
@@ -27,6 +30,7 @@ import com.ruoyi.common.log.annotation.Log;
 import com.ruoyi.common.log.enums.BusinessType;
 import com.ruoyi.common.security.annotation.InnerAuth;
 import com.ruoyi.common.security.annotation.RequiresPermissions;
+import com.ruoyi.common.security.service.TokenService;
 import com.ruoyi.common.security.utils.SecurityUtils;
 import com.ruoyi.system.api.domain.SysDept;
 import com.ruoyi.system.api.domain.SysRole;
@@ -65,6 +69,9 @@ public class SysUserController extends BaseController
 
     @Autowired
     private ISysConfigService configService;
+
+    @Autowired
+    private TokenService tokenService;
 
     /**
      * 获取用户列表
@@ -167,16 +174,48 @@ public class SysUserController extends BaseController
     @GetMapping("getInfo")
     public AjaxResult getInfo()
     {
-        SysUser user = userService.selectUserById(SecurityUtils.getUserId());
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser user = loginUser.getSysUser();
         // 角色集合
         Set<String> roles = permissionService.getRolePermission(user);
         // 权限集合
         Set<String> permissions = permissionService.getMenuPermission(user);
+        if (!loginUser.getPermissions().equals(permissions))
+        {
+            loginUser.setPermissions(permissions);
+            tokenService.refreshToken(loginUser);
+        }
         AjaxResult ajax = AjaxResult.success();
         ajax.put("user", user);
         ajax.put("roles", roles);
         ajax.put("permissions", permissions);
+        ajax.put("isDefaultModifyPwd", initPasswordIsModify(user.getPwdUpdateDate()));
+        ajax.put("isPasswordExpired", passwordIsExpiration(user.getPwdUpdateDate()));
         return ajax;
+    }
+
+    // 检查初始密码是否提醒修改
+    public boolean initPasswordIsModify(Date pwdUpdateDate)
+    {
+        Integer initPasswordModify = Convert.toInt(configService.selectConfigByKey("sys.account.initPasswordModify"));
+        return initPasswordModify != null && initPasswordModify == 1 && pwdUpdateDate == null;
+    }
+
+    // 检查密码是否过期
+    public boolean passwordIsExpiration(Date pwdUpdateDate)
+    {
+        Integer passwordValidateDays = Convert.toInt(configService.selectConfigByKey("sys.account.passwordValidateDays"));
+        if (passwordValidateDays != null && passwordValidateDays > 0)
+        {
+            if (StringUtils.isNull(pwdUpdateDate))
+            {
+                // 如果从未修改过初始密码，直接提醒过期
+                return true;
+            }
+            Date nowDate = DateUtils.getNowDate();
+            return DateUtils.differentDaysByMillisecond(nowDate, pwdUpdateDate) > passwordValidateDays;
+        }
+        return false;
     }
 
     /**
@@ -186,18 +225,18 @@ public class SysUserController extends BaseController
     @GetMapping(value = { "/", "/{userId}" })
     public AjaxResult getInfo(@PathVariable(value = "userId", required = false) Long userId)
     {
-        userService.checkUserDataScope(userId);
         AjaxResult ajax = AjaxResult.success();
-        List<SysRole> roles = roleService.selectRoleAll();
-        ajax.put("roles", SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
-        ajax.put("posts", postService.selectPostAll());
         if (StringUtils.isNotNull(userId))
         {
+            userService.checkUserDataScope(userId);
             SysUser sysUser = userService.selectUserById(userId);
             ajax.put(AjaxResult.DATA_TAG, sysUser);
             ajax.put("postIds", postService.selectPostListByUserId(userId));
             ajax.put("roleIds", sysUser.getRoles().stream().map(SysRole::getRoleId).collect(Collectors.toList()));
         }
+        List<SysRole> roles = roleService.selectRoleAll();
+        ajax.put("roles", SysUser.isAdmin(userId) ? roles : roles.stream().filter(r -> !r.isAdmin()).collect(Collectors.toList()));
+        ajax.put("posts", postService.selectPostAll());
         return ajax;
     }
 

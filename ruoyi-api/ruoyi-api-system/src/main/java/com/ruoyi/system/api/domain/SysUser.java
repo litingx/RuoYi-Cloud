@@ -8,6 +8,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import com.ruoyi.common.core.annotation.Excel;
 import com.ruoyi.common.core.annotation.Excel.ColumnType;
 import com.ruoyi.common.core.annotation.Excel.Type;
+import com.ruoyi.common.core.constant.UserConstants;
 import com.ruoyi.common.core.annotation.Excels;
 import com.ruoyi.common.core.web.domain.BaseEntity;
 import com.ruoyi.common.core.xss.Xss;
@@ -55,8 +56,8 @@ public class SysUser extends BaseEntity
     /** 密码 */
     private String password;
 
-    /** 帐号状态（0正常 1停用） */
-    @Excel(name = "帐号状态", readConverterExp = "0=正常,1=停用")
+    /** 账号状态（0正常 1停用） */
+    @Excel(name = "账号状态", readConverterExp = "0=正常,1=停用")
     private String status;
 
     /** 删除标志（0代表存在 2代表删除） */
@@ -69,6 +70,9 @@ public class SysUser extends BaseEntity
     /** 最后登录时间 */
     @Excel(name = "最后登录时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss", type = Type.EXPORT)
     private Date loginDate;
+
+    /** 密码最后更新时间 */
+    private Date pwdUpdateDate;
 
     /** 部门对象 */
     @Excels({
@@ -116,7 +120,7 @@ public class SysUser extends BaseEntity
 
     public static boolean isAdmin(Long userId)
     {
-        return userId != null && 1L == userId;
+        return UserConstants.isAdmin(userId);
     }
 
     public Long getDeptId()
@@ -247,6 +251,16 @@ public class SysUser extends BaseEntity
         this.loginDate = loginDate;
     }
 
+    public Date getPwdUpdateDate()
+    {
+        return pwdUpdateDate;
+    }
+
+    public void setPwdUpdateDate(Date pwdUpdateDate)
+    {
+        this.pwdUpdateDate = pwdUpdateDate;
+    }
+
     public SysDept getDept()
     {
         return dept;
@@ -296,6 +310,7 @@ public class SysUser extends BaseEntity
     {
         this.roleId = roleId;
     }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -312,6 +327,7 @@ public class SysUser extends BaseEntity
             .append("delFlag", getDelFlag())
             .append("loginIp", getLoginIp())
             .append("loginDate", getLoginDate())
+            .append("pwdUpdateDate", getPwdUpdateDate())
             .append("createBy", getCreateBy())
             .append("createTime", getCreateTime())
             .append("updateBy", getUpdateBy())

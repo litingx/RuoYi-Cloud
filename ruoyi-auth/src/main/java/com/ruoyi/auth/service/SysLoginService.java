@@ -74,17 +74,11 @@ public class SysLoginService
         // 查询用户信息
         R<LoginUser> userResult = remoteUserService.getUserInfo(username, SecurityConstants.INNER);
 
-        if (StringUtils.isNull(userResult) || StringUtils.isNull(userResult.getData()))
-        {
-            recordLogService.recordLogininfor(username, Constants.LOGIN_FAIL, "登录用户不存在");
-            throw new ServiceException("登录用户：" + username + " 不存在");
-        }
-
         if (R.FAIL == userResult.getCode())
         {
             throw new ServiceException(userResult.getMsg());
         }
-        
+
         LoginUser userInfo = userResult.getData();
         SysUser user = userResult.getData().getSysUser();
         if (UserStatus.DELETED.getCode().equals(user.getDelFlag()))
@@ -149,6 +143,7 @@ public class SysLoginService
         SysUser sysUser = new SysUser();
         sysUser.setUserName(username);
         sysUser.setNickName(username);
+        sysUser.setPwdUpdateDate(DateUtils.getNowDate());
         sysUser.setPassword(SecurityUtils.encryptPassword(password));
         R<?> registerResult = remoteUserService.registerUserInfo(sysUser, SecurityConstants.INNER);
 

@@ -1,11 +1,16 @@
+import router from '@/router'
+import { MessageBox, } from 'element-ui'
 import { login, logout, getInfo, refreshToken } from '@/api/login'
 import { getToken, setToken, setExpiresIn, removeToken } from '@/utils/auth'
+import { isEmpty } from "@/utils/validate"
+import defAva from '@/assets/images/profile.jpg'
 
 const user = {
   state: {
     token: getToken(),
     id: '',
     name: '',
+    nickName: '',
     avatar: '',
     roles: [],
     permissions: []
@@ -23,6 +28,9 @@ const user = {
     },
     SET_NAME: (state, name) => {
       state.name = name
+    },
+    SET_NICK_NAME: (state, nickName) => {
+      state.nickName = nickName
     },
     SET_AVATAR: (state, avatar) => {
       state.avatar = avatar
@@ -61,7 +69,7 @@ const user = {
       return new Promise((resolve, reject) => {
         getInfo().then(res => {
           const user = res.user
-          const avatar = (user.avatar == "" || user.avatar == null) ? require("@/assets/images/profile.jpg") : user.avatar;
+          const avatar = (isEmpty(user.avatar)) ? defAva : user.avatar
           if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
             commit('SET_ROLES', res.roles)
             commit('SET_PERMISSIONS', res.permissions)
@@ -70,7 +78,20 @@ const user = {
           }
           commit('SET_ID', user.userId)
           commit('SET_NAME', user.userName)
+          commit('SET_NICK_NAME', user.nickName)
           commit('SET_AVATAR', avatar)
+          /* 初始密码提示 */
+          if(res.isDefaultModifyPwd) {
+            MessageBox.confirm('您的密码还是初始密码，请修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
+              router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
+            }).catch(() => {})
+          }
+          /* 过期密码提示 */
+          if(!res.isDefaultModifyPwd && res.isPasswordExpired) {
+            MessageBox.confirm('您的密码已过期，请尽快修改密码！',  '安全提示', {  confirmButtonText: '确定',  cancelButtonText: '取消',  type: 'warning' }).then(() => {
+              router.push({ name: 'Profile', params: { activeTab: 'resetPwd' } })
+            }).catch(() => {})
+          }
           resolve(res)
         }).catch(error => {
           reject(error)
